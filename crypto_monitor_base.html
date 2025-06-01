@@ -152,13 +152,14 @@
             margin-right: 8px;
         }
     </style>
+    <meta charset="UTF-8">
 </head>
 <body>
 
     
 
     <div class="container">
-        <h1>📈 Monitor de Precios de Criptomonedas</h1>
+        <h1><span class="chart-icon">&#x1F4C8;</span> Monitor de Precios de Criptomonedas</h1>
         <div class="selection-panel">
         <h2>Seleccionar Criptomonedas</h2>
         <div class="crypto-checkboxes" id="crypto-checkboxes">
@@ -264,24 +265,24 @@
             priceElement.textContent = `$ ${newPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
             priceElement.classList.remove('price-up', 'price-down');
 
-            arrowElement.textContent = '';
+            arrowElement.innerHTML = '';
             arrowElement.classList.remove('up', 'down');
 
             if (oldPrice !== undefined) {
                 if (newPrice > oldPrice) {
                     priceElement.classList.add('price-up');
-                    arrowElement.textContent = '▲';
+                    arrowElement.innerHTML = '&#x25B2;'; // Código HTML para triángulo hacia arriba
                     arrowElement.classList.add('up');
                 } else if (newPrice < oldPrice) {
                     priceElement.classList.add('price-down');
-                    arrowElement.textContent = '▼';
+                    arrowElement.innerHTML = '&#x25BC;'; // Código HTML para triángulo hacia abajo
                     arrowElement.classList.add('down');
                 }
             }
 
             setTimeout(() => {
                 priceElement.classList.remove('price-up', 'price-down');
-                arrowElement.textContent = '';
+                arrowElement.innerHTML = '';
                 arrowElement.classList.remove('up', 'down');
             }, 700);
         }
@@ -289,12 +290,23 @@
         // Nueva función para actualizar la visualización del historial
         function updateHistoryDisplay(historyElement, historyArray) {
             historyElement.innerHTML = ''; // Limpiar historial anterior
-            historyArray.slice(0, HISTORY_SIZE).forEach(price => { // Tomar solo los últimos HISTORY_SIZE
+            for (let i = 0; i < historyArray.length; i++) {
+                const price = historyArray[i];
                 const span = document.createElement('span');
                 span.className = 'history-item';
                 span.textContent = `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
+            
+                // Determinar la clase de color basada en la comparación con el precio anterior
+                if (i > 0) {
+                    const prevPrice = historyArray[i - 1];
+                    if (price > prevPrice) {
+                        span.classList.add('price-up');
+                    } else if (price < prevPrice) {
+                        span.classList.add('price-down');
+                    }
+                }
                 historyElement.appendChild(span);
-            });
+            }
         }
 
         function sendCryptoPreferences() {

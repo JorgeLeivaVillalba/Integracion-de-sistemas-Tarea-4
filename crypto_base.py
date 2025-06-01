@@ -27,11 +27,12 @@ AVAILABLE_CRYPTOS = ["BTC", "ETH", "DOGE", "LTC", "XRP"]
 @app.get("/", response_class=HTMLResponse)
 async def get_crypto_monitor_page():
     """
-    Este endpoint debe leer y servir el contenido del archivo 'crypto_monitor.html'.
+    Este endpoint debe leer y servir el contenido del archivo 'crypto_monitor_base.html'.
     Debe manejar el caso en que el archivo no se encuentre.
     """
     try:
-        # TODO cargar el contenido del archivo HTML
+        # Carga el archivo HTML
+        html_content = HTML_FILE_PATH.read_text()
         return HTMLResponse(content=html_content)
     except FileNotFoundError:
         print(f"Error: Archivo HTML no encontrado en {HTML_FILE_PATH}")
@@ -46,7 +47,8 @@ async def get_crypto_monitor_page():
 # ==============================================
 @app.websocket("/ws/crypto_prices")
 async def websocket_endpoint(websocket: WebSocket):
-    # TODO implementar: Aceptar la conexión WebSocket
+    # Aceptar la conexión de WebSocket
+    await websocket.accept()
     active_connections[websocket] = AVAILABLE_CRYPTOS
     print(f"Cliente conectado al WebSocket: {websocket.client}. Preferencias iniciales: {active_connections[websocket]}")
 
@@ -56,9 +58,13 @@ async def websocket_endpoint(websocket: WebSocket):
             message = await websocket.receive_text()
             try:
                 data = json.loads(message)
-                if data.get("type") == "actualizar_preferencias" and "cryptos" in data:
-                    #TODO implementar: Actualizar las preferencias del cliente
-                    pass
+                if data.get("type") == "update_prefs" and "cryptos" in data:  # Cambiar a update_prefs
+                    # Actualizar preferencias del cliente
+                    cryptos = data["cryptos"]
+                    # Verificar que las cripto solicitadas estén disponibles
+                    valid_cryptos = [crypto for crypto in cryptos if crypto in AVAILABLE_CRYPTOS]
+                    active_connections[websocket] = valid_cryptos
+                    print(f"Preferencias actualizadas para {websocket.client}: {active_connections[websocket]}")
                 else:
                     print(f"Mensaje desconocido del cliente {websocket.client}: {message}")
             except json.JSONDecodeError:
@@ -67,13 +73,13 @@ async def websocket_endpoint(websocket: WebSocket):
                 print(f"Error procesando mensaje del cliente {websocket.client}: {e}")
 
     except WebSocketDisconnect:
-        # IMPLEMENTAR: Remover la conexión de 'active_connections'
+        # Remover la conexión de 'active_connections'
         if websocket in active_connections:
             del active_connections[websocket]
         print(f"Cliente desconectado del WebSocket: {websocket.client}")
     except Exception as e:
         print(f"Error en WebSocket para {websocket.client}: {e}")
-        # IMPLEMENTAR: Asegurar que la conexión se remueve incluso en otros errores
+        # Asegurar que la conexión se remueve incluso en otros errores
         if websocket in active_connections:
             del active_connections[websocket]
 
@@ -101,9 +107,17 @@ async def enviar_precios_periodicamente():
         # Usar list() para iterar sobre una copia para evitar RuntimeError
         clients_to_remove = []
         for connection, prefs in list(active_connections.items()):
-            #TODO Filtrar los precios según las preferencias de este cliente
-            #TODO Enviar solo las criptomonedas que el cliente ha seleccionado
-            pass
+            # Filtrar los precrypto según filtro
+            filtered_prices = {crypto: price for crypto, price in current_prices.items() if crypto in prefs}
+            
+            # Enviar solo las criptomonedas seleccionadas
+            try:
+                if filtered_prices:
+                    await connection.send_json(filtered_prices)
+            except Exception as e:
+                print(f"Error enviando datos al cliente {connection.client}: {e}")
+                clients_to_remove.append(connection)
+                
         # Limpiar las conexiones que fallaron
         for client in clients_to_remove:
             if client in active_connections:

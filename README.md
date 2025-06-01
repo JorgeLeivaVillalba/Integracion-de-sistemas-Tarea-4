@@ -6,6 +6,13 @@ El objetivo principal de esta tarea es que los alumnos demuestren su comprensió
 
 **Puntaje Máximo:** 10 puntos
 
+## Instrucciones
+
+1. **Configuración Inicial:**
+   - Crear un entorno virtual.
+   - Instalar las dependencias:
+    `python -m pip install -r requirements.txt`
+
 ---
 
 ## 1. Servir Contenido HTML Estático (0.5 puntos)
